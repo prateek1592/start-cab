@@ -44,7 +44,8 @@ class LearningAgent(Agent):
 			self.epsilon = 0
 			self.alpha = 0        
         
-        self.epsilon = self.epsilon * 0.995
+        self.alpha = self.alpha * 0.99
+        self.epsilon = self.epsilon * 0.999
         
         return None
 
@@ -98,8 +99,9 @@ class LearningAgent(Agent):
         #   Then, for each action available, set the initial Q-value to 0.0
         
         # print state
-        if state not in self.Q:
-            self.Q[state] = {key: 0.0 for key in self.valid_actions}
+        if self.learning:
+            if state not in self.Q:
+                self.Q[state] = {key: 0.0 for key in self.valid_actions}
         
         return
 
@@ -126,7 +128,10 @@ class LearningAgent(Agent):
         elif random.uniform(0,1) < self.epsilon:
             action = random.choice(self.valid_actions)
         else:
-            action = max(self.Q[state].iterkeys(), key=(lambda key: self.Q[state][key]))
+            max_value = self.get_maxQ(state)
+            max_actions = [k for k, v in self.Q[state].items() if v == max_value]
+            action = random.choice(max_actions)
+            # action = max(self.Q[state].iterkeys(), key=(lambda key: self.Q[state][key]))
         return action
 
 
@@ -140,7 +145,8 @@ class LearningAgent(Agent):
         ###########
         # When learning, implement the value iteration update rule
         #   Use only the learning rate 'alpha' (do not use the discount factor 'gamma')
-        self.Q[state][action] = (1 - self.alpha) * self.Q[state][action] + self.alpha * (reward + self.get_maxQ(state))
+        if self.learning:
+            self.Q[state][action] = (1 - self.alpha) * self.Q[state][action] + self.alpha * reward
 
         return
 
@@ -177,7 +183,7 @@ def run():
     #   learning   - set to True to force the driving agent to use Q-learning
     #    * epsilon - continuous value for the exploration factor, default is 1
     #    * alpha   - continuous value for the learning rate, default is 0.5
-    agent = env.create_agent(LearningAgent, learning = True, alpha = 0.2, epsilon = 1.0)
+    agent = env.create_agent(LearningAgent, learning = True, alpha = 0.7, epsilon = 1.0)
     
     ##############
     # Follow the driving agent
@@ -199,7 +205,7 @@ def run():
     # Flags:
     #   tolerance  - epsilon tolerance before beginning testing, default is 0.05 
     #   n_test     - discrete number of testing trials to perform, default is 0
-    sim.run(n_test = 200, tolerance = 0.01)
+    sim.run(n_test = 400, tolerance = 0.01)
 
 
 if __name__ == '__main__':
